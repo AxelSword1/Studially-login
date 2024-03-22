@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contactos</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Inicio  -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <!-- Centro del correo electrónico -->
+        <span id="userEmail" class="navbar-text"></span>
+        <!-- Formulario para logout -->
+        <form id="logoutForm" action="/logout" method="POST">
+            <button type="submit" class="btn btn-outline-danger">Logout</button>
+        </form>
+    </div>
+  </nav>
+
+  <!-- Botón para abrir el modal de contactos -->
+  <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#crearContactoModal">
+    Crear Contacto
+  </button>
+
+  <!-- Modal para crear contacto -->
+  <div class="modal fade" id="crearContactoModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Crear Contacto</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="crearContactoForm">
+            <div class="form-group">
+              <label for="nombreContacto">Nombre:</label>
+              <input type="text" class="form-control" id="nombreContacto">
+            </div>
+            <div class="form-group">
+              <label for="telefonoContacto">Teléfono:</label>
+              <input type="text" class="form-control" id="telefonoContacto">
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla para mostrar los contactos -->
+  <div class="container mt-3">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th scope="col">Nombre</th>
+          <th scope="col">Teléfono</th>
+        </tr>
+      </thead>
+      <tbody id="tablaContactos">
+        <!-- Aquí se mostrarán los contactos -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script>
+  
+    // Extraer el valor del parámetro de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const email = urlParams.get('email');
+    const uid = urlParams.get('uid');
+
+    // Mostrar el valor del parámetro en el elemento con id 'userEmail'
+    const userEmail = document.getElementById('userEmail');
+    userEmail.textContent = `Correo Electrónico: ${email}`;
+
+
+    // Agregar un evento submit al formulario para crear contacto
+    document.getElementById('crearContactoForm').addEventListener('submit', function(event) {
+      event.preventDefault(); // Evitar que el formulario se envíe automáticamente
+
+      // Llamar a la función para crear contacto
+      crearContacto();
+    });
+
+    // Función para crear un nuevo contacto
+    function crearContacto() {
+      const nombre = document.getElementById('nombreContacto').value;
+      const telefono = document.getElementById('telefonoContacto').value;
+
+      fetch('/crear-contacto', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ uid: uid, nombre: nombre, telefono: telefono })
+      })
+      .then(response => {
+        if (response.ok) {
+          console.log('Contacto creado correctamente');
+          // Actualizar la tabla de contactos después de crear un nuevo contacto
+          obtenerContactos(uid);
+        } else {
+          console.error('Error al crear el contacto');
+        }
+      })
+      .catch(error => {
+        console.error('Error al crear el contacto:', error);
+      });
+    }
+
+    // Función para obtener todos los contactos de un usuario
+    function obtenerContactos(uid) {
+      fetch(`/contactos/${uid}`)
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error('Error al obtener los contactos');
+        }
+      })
+      .then(contactos => {
+        // Mostrar los contactos en la tabla
+        const tablaContactos = document.getElementById('tablaContactos');
+        tablaContactos.innerHTML = '';
+        contactos.forEach(contacto => {
+          const fila = `
+            <tr>
+              <td>${contacto.nombre}</td>
+              <td>${contacto.telefono}</td>
+            </tr>
+          `;
+          tablaContactos.innerHTML += fila;
+        });
+      })
+      .catch(error => {
+        console.error('Error al obtener los contactos:', error);
+      });
+    }
+
+    // Llamar a la función para obtener los contactos cuando se carga la página
+    window.onload = function() {
+      //const uid = '{{uid}}'; // Obtener el UID del usuario autenticado
+      obtenerContactos(uid);
+    };
+
+  </script>
+</body>
+</html>
